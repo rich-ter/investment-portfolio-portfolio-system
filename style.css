@@ -364,3 +364,49 @@ button:hover {
     background-color: #cc0000;
     /* Darker red color on hover */
 }
+
+.request-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    /* This will evenly space your items, you can adjust as necessary */
+    gap: 20px;
+    /* This adds space between the flex items */
+}
+
+.request {
+    flex: 0 1 calc(33.333% - 20px);
+    /* Adjust the calculation to account for the gap */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    /* Example shadow for styling */
+    padding: 20px;
+    margin-bottom: 20px;
+    /* Add space between rows */
+    box-sizing: border-box;
+    /* Include padding and border in the element's total width and height */
+    display: flex;
+    /* Add if you need internal flex layout */
+    flex-direction: column;
+    /* Stack internal items vertically */
+    justify-content: space-between;
+    /* Space out the internal content */
+}
+
+.request button {
+    padding: 10px;
+    margin-top: 10px;
+    /* Space between the description and the first button */
+    width: 100%;
+    /* Make buttons fill the container */
+    box-sizing: border-box;
+    /* Include padding and border in the button's total width */
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.request button:hover {
+    background-color: #0056b3;
+}

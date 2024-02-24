@@ -6,6 +6,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CRO Portal</title>
     <link rel="stylesheet" href="style.css">
+        <style>
+            .request-container {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-around;
+                gap: 20px;
+            }
+        
+            .request {
+                flex: 1 1 calc(33.333% - 20px);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                padding: 20px;
+                box-sizing: border-box;
+                margin: 10px 0;
+            }
+        </style>
 </head>
 
 <body>
@@ -27,7 +43,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDs3lVnUrQNwENZVucKekgKrD8Ar7LIp7k",
@@ -41,29 +57,68 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        onAuthStateChanged(auth, user => {
-            if (user) {
-                const userRef = doc(db, "users", user.uid);
-                getDoc(userRef).then(docSnap => {
-                    if (docSnap.exists()) {
-                        const userData = docSnap.data();
-                        if (userData.role === 'cro') {
-                            document.getElementById('userName').textContent = userData.name || 'Unnamed CRO';
-                        } else {
-                            // Handle non-CRO users or redirect
-                            console.error('Access denied. User is not a CRO.');
-                        }
+    onAuthStateChanged(auth, user => {
+        if (user) {
+            const userRef = doc(db, "users", user.uid);
+            getDoc(userRef).then(docSnap => {
+                if (docSnap.exists()) {
+                    const userData = docSnap.data();
+                    if (userData.role === 'cro') {
+                        document.getElementById('userName').textContent = userData.name || 'Unnamed CRO';
+                        displayClientRequests(user.uid); // Call this function here
                     } else {
-                        console.log("No such document!");
+                        console.error('Access denied. User is not a CRO.');
+                        // Optionally, redirect to a different page
                     }
+                } else {
+                    console.log("No such document!");
+                }
+            });
+        } else {
+            console.log("No user signed in.");
+            window.location.href = 'login_page.html';
+        }
+    });
+
+
+
+  async function displayClientRequests(croUid) {
+        console.log('Running displayClientRequests for CRO UID:', croUid);
+        try {
+            // Query to find users managed by this CRO
+            const usersQuery = query(collection(db, "users"), where("cro_uid", "==", croUid));
+            const usersSnapshot = await getDocs(usersQuery);
+
+            // Extract the user IDs of the managed users
+            const userIds = usersSnapshot.docs.map(doc => doc.data().uid);
+
+            const requestsContainer = document.getElementById('clientRequestsContainer');
+            requestsContainer.innerHTML = ''; // Clear previous requests
+
+            // For each user ID, query the 'test' collection
+            for (const userId of userIds) {
+                const testsQuery = query(collection(db, "test"), where("userID", "==", userId));
+                const testsSnapshot = await getDocs(testsQuery);
+
+                testsSnapshot.forEach(doc => {
+                    const test = doc.data();
+                    const requestHTML = `
+                    <div class="request">
+                        <h3>${test.title}</h3>
+                        <p>Date: ${test.date}</p>
+                        <p>Description: ${test.description}</p>
+                        <button class="prepare-report">Prepare Report</button>
+                        <button class="send-to-expert">Send to an Expert</button>
+                    </div>
+                `;
+                    requestsContainer.innerHTML += requestHTML;
                 });
-            } else {
-                // User is signed out
-                console.log("No user signed in.");
-                // Redirect to login page
-                window.location.href = 'login_page.html';
             }
-        });
+        } catch (error) {
+            console.error("Error displaying client requests:", error);
+        }
+    }
+
 
         const logoutButton = document.getElementById('logoutButton');
         logoutButton.addEventListener('click', () => {
