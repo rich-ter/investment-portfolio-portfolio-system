@@ -98,6 +98,9 @@
                         if (croDocSnap.exists()) {
                             const croData = croDocSnap.data();
                             document.querySelector(".cro-info .cro-name").textContent = croData.name;
+                            document.querySelector(".cro-info .cro-image").textContent = croData.imageUrl;
+                            console.log(croData.imageUrl)
+
                         } else {
                             console.error("CRO document not found");
                         }

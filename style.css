@@ -458,3 +458,128 @@ button:hover {
     text-decoration: none;
     cursor: pointer;
 }
+
+
+/* Global Styles */
+body,
+html {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f7f6;
+    color: #333;
+}
+
+header {
+    background-color: #004165;
+    color: #ffffff;
+    padding: 20px 10%;
+    text-align: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.user-section {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-name span {
+    font-weight: bold;
+    color: #FFD700;
+    /* Golden for emphasis */
+}
+
+button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+button#logoutButton {
+    background-color: #D32F2F;
+    color: white;
+}
+
+button#logoutButton:hover {
+    background-color: #B71C1C;
+}
+
+main {
+    padding: 20px 10%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+}
+
+form {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+input[type=text],
+input[type=date],
+textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+textarea {
+    height: 100px;
+}
+
+form button {
+    width: 100%;
+    background-color: #007BFF;
+    color: white;
+}
+
+form button:hover {
+    background-color: #0056b3;
+}
+
+/* Specific Styles */
+.cro-info {
+    text-align: center;
+}
+
+.cro-info img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 3px solid #004165;
+    margin-bottom: 15px;
+}
+
+.cro-name {
+    font-size: 18px;
+    color: #004165;
+    font-weight: bold;
+}
+
+.applications,
+.responses {
+    margin-top: 40px;
+    grid-column: span 2;
+}
+
+.application div,
+.response div {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
