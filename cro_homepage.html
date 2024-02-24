@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRO Portal</title>
+    <link rel="stylesheet" href="cro_stylesheet.css">
+</head>
+
+<body>
+    <header>
+        <h1>Απαλλακτική Εργασία Νεφουπολογιστικής</h1>
+        <div class="user-name">CRO: <span id="userName">Loading...</span></div>
+    </header>
+    <main>
+        <section class="client-requests">
+            <h2>Your Clients' Requests</h2>
+            <div class="request" id="clientRequestsContainer">
+                <!-- Client requests will be populated here -->
+            </div>
+        </section>
+    </main>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDs3lVnUrQNwENZVucKekgKrD8Ar7LIp7k",
+            authDomain: "kiriazis-420f5.firebaseapp.com",
+            projectId: "kiriazis-420f5",
+            storageBucket: "kiriazis-420f5.appspot.com",
+            messagingSenderId: "890131473043",
+            appId: "1:890131473043:web:12c264c0f993015977a366"
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                const userRef = doc(db, "users", user.uid);
+                getDoc(userRef).then(docSnap => {
+                    if (docSnap.exists()) {
+                        const userData = docSnap.data();
+                        if (userData.role === 'cro') {
+                            document.getElementById('userName').textContent = userData.name || 'Unnamed CRO';
+                        } else {
+                            // Handle non-CRO users or redirect
+                            console.error('Access denied. User is not a CRO.');
+                        }
+                    } else {
+                        console.log("No such document!");
+                    }
+                });
+            } else {
+                // User is signed out
+                console.log("No user signed in.");
+                // Redirect to login page
+                // window.location.href = 'login.html';
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Include Firebase SDK placeholder (Firebase SDK will be imported via module script) -->
+</head>
+
+<body>
+    <header>
+        <h1>Mock Login Page</h1>
+    </header>
+    <main>
+        <div class="login-section">
+            <h2>Login</h2>
+            <form id="loginForm">
+                <input type="email" id="email" placeholder="Email" required>
+                <input type="password" id="password" placeholder="Password" required>
+                <button type="submit">Login</button>
+                <div id="errorMessage" style="color: red;"></div> <!-- Error message container -->
+            </form>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword as firebaseSignInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Initialize Firebase with your configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDs3lVnUrQNwENZVucKekgKrD8Ar7LIp7k",
+            authDomain: "kiriazis-420f5.firebaseapp.com",
+            projectId: "kiriazis-420f5",
+            storageBucket: "kiriazis-420f5.appspot.com",
+            messagingSenderId: "890131473043",
+            appId: "1:890131473043:web:12c264c0f993015977a366"
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginForm = document.getElementById('loginForm');
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault(); // Prevent the default form submission
+                signInWithEmailAndPassword();
+            });
+        });
+
+    async function signInWithEmailAndPassword() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const errorMessageElement = document.getElementById('errorMessage');
+
+        try {
+            const userCredential = await firebaseSignInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            console.log('User signed in:', user);
+
+            // Retrieve user role from Firestore
+            const userDocRef = doc(db, "users", user.uid);
+            const userDoc = await getDoc(userDocRef);
+
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                // Redirect based on role
+                switch (userData.role) {
+                    case 'customer':
+                        window.location.href = 'cust_homepage.html';
+                        break;
+                    case 'cro':
+                        window.location.href = 'cro_homepage.html';
+                        break;
+                    case 'ma':
+                        window.location.href = 'ma_homepage.html';
+                        break;
+                    default:
+                        console.error('Unknown role:', userData.role);
+                        // Optionally, redirect to a default page or show an error message
+                        break;
+                }
+            } else {
+                console.error('No user document found');
+                // Handle the case where the user document does not exist
+            }
+        } catch (error) {
+            console.error('Sign-in error:', error.code, error.message);
+            errorMessageElement.textContent = error.message;
+        }
+    }
+
+    // Attach the signIn function to form submission event
+    document.addEventListener('DOMContentLoaded', () => {
+        const loginForm = document.getElementById('loginForm');
+        if (loginForm) {
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault(); // Prevent the default form submission
+                signInWithEmailAndPassword();
+            });
+        }
+    });
+    </script>
+</body>
+
+</html>
