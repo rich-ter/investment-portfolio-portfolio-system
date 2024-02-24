@@ -5,13 +5,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CRO Portal</title>
-    <link rel="stylesheet" href="cro_stylesheet.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
     <header>
         <h1>Απαλλακτική Εργασία Νεφουπολογιστικής</h1>
-        <div class="user-name">CRO: <span id="userName">Loading...</span></div>
+        <div class="user-section">
+            <span class="user-name"> CRO: <span id="userName">Loading...</span></div>
+            <button id="logoutButton">Logout</button>
+        </div>
     </header>
     <main>
         <section class="client-requests">
@@ -23,7 +26,7 @@
     </main>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -58,9 +61,19 @@
                 // User is signed out
                 console.log("No user signed in.");
                 // Redirect to login page
-                // window.location.href = 'login.html';
+                window.location.href = 'login_page.html';
             }
         });
+
+        const logoutButton = document.getElementById('logoutButton');
+        logoutButton.addEventListener('click', () => {
+                signOut(auth).then(() => {
+                    console.log('User signed out successfully');
+                    window.location.href = 'login_page.html'; // Redirect to login page
+                }).catch((error) => {
+                    console.error('Sign out error', error);
+                });
+            });
     </script>
 </body>
 

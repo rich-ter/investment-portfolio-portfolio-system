@@ -5,13 +5,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MA Portal</title>
-    <link rel="stylesheet" href="cro_stylesheet.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
     <header>
         <h1>Απαλλακτική Εργασία Νεφουπολογιστικής</h1>
-        <div class="user-name">MA: <span id="userName">MA Name</span></div>
+        <div class="user-section">
+            <span class="user-name"> MA: <span id="userName">Loading...</span>
+        </div>
+        <button id="logoutButton">Logout</button>
+        </div>    
     </header>
     <main>
         <section class="client-requests">
@@ -29,7 +33,57 @@
             </div>
         </section>
     </main>
-    <script src="script.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDs3lVnUrQNwENZVucKekgKrD8Ar7LIp7k",
+            authDomain: "kiriazis-420f5.firebaseapp.com",
+            projectId: "kiriazis-420f5",
+            storageBucket: "kiriazis-420f5.appspot.com",
+            messagingSenderId: "890131473043",
+            appId: "1:890131473043:web:12c264c0f993015977a366"
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                const userRef = doc(db, "users", user.uid);
+                getDoc(userRef).then(docSnap => {
+                    if (docSnap.exists()) {
+                        const userData = docSnap.data();
+                        if (userData.role === 'ma') {
+                            document.getElementById('userName').textContent = userData.name || 'Unnamed MA';
+                        } else {
+                            // Handle non-CRO users or redirect
+                            console.error('Access denied. User is not a MA.');
+                        }
+                    } else {
+                        console.log("No such document!");
+                    }
+                });
+            } else {
+                // User is signed out
+                console.log("No user signed in.");
+                // Redirect to login page
+                window.location.href = 'login_page.html';
+            }
+        });
+
+        const logoutButton = document.getElementById('logoutButton');
+        logoutButton.addEventListener('click', () => {
+            signOut(auth).then(() => {
+                console.log('User signed out successfully');
+                window.location.href = 'login_page.html'; // Redirect to login page
+            }).catch((error) => {
+                console.error('Sign out error', error);
+            });
+        });
+    </script>
 </body>
 
 </html>
