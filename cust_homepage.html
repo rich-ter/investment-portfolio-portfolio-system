@@ -73,30 +73,67 @@
         const db = getFirestore();
 
 
-        function initializeUserDependentFeatures() {
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    // Fetch and display the user's name
-                    getDoc(doc(db, "users", user.uid)).then((docSnap) => {
-                        if (docSnap.exists()) {
-                            const userData = docSnap.data();
-                            document.getElementById('userName').textContent = userData.name || 'John Doe';
-                        } else {
-                            console.log("No user document found");
-                        }
-                    });
+    async function initializeUserDependentFeatures() {
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Fetch the logged-in user's document
+                const userDocRef = doc(db, "users", user.uid);
+                const userDocSnap = await getDoc(userDocRef);
 
-                    // Fetch and display submitted forms
+                if (userDocSnap.exists()) {
+                    const userData = userDocSnap.data();
+                    document.getElementById('userName').textContent = userData.name || 'John Doe';
+
+                    // Now that the user's data is confirmed, call the functions to display forms and proposals
+                    // This ensures these functions are called for any user that has successfully logged in and has a document in Firestore
                     displaySubmittedForms(user);
+                    displayProposals(user);
 
+                    // Additional step for customers to fetch their CRO's name
+                    if (userData.role === "customer" && userData.cro_uid) {
+                        // Fetch the CRO's document using cro_uid
+                        const croDocRef = doc(db, "users", userData.cro_uid);
+                        const croDocSnap = await getDoc(croDocRef);
+
+                        if (croDocSnap.exists()) {
+                            const croData = croDocSnap.data();
+                            document.querySelector(".cro-info .cro-name").textContent = croData.name;
+                        } else {
+                            console.error("CRO document not found");
+                        }
+                    }
                 } else {
-                    console.log("No user is signed in.");
-                    // Redirect to login page or handle accordingly
+                    console.error("User document not found");
                 }
-            });
+            } else {
+                console.error("No user is signed in.");
+                // Handle user not signed in (e.g., redirect to login page)
+            }
+        });
+    }
+
+
+        async function displayProposals(user) {
+            try {
+                const proposalsQuery = query(collection(db, "cro_proposal"), where("customerID", "==", user.uid));
+                const querySnapshot = await getDocs(proposalsQuery);
+                const responsesContainer = document.getElementById('responsesContainer');
+                responsesContainer.innerHTML = ''; // Clear previous responses
+                querySnapshot.forEach((doc) => {
+                    const proposal = doc.data();
+                    const proposalHTML = `
+                    <div class="response">
+                        <h3>${proposal.title}</h3>
+                        <p>${proposal.suggestionDescription}</p>
+                        <p>Recommended Buys: ${JSON.stringify(proposal.buys)}</p>
+                    </div>
+                `;
+                    responsesContainer.innerHTML += proposalHTML;
+                });
+            } catch (error) {
+                console.error("Error fetching proposals:", error);
+            }
         }
-
-
     // Adjusted function to display submitted forms, now requires a user parameter
     async function displaySubmittedForms(user) {
         try {

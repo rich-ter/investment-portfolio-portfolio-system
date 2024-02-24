@@ -35,15 +35,35 @@
     <main>
         <section class="client-requests">
             <h2>Your Clients' Requests</h2>
-            <div class="request" id="clientRequestsContainer">
+            <div class="request-containe" id="clientRequestsContainer">
                 <!-- Client requests will be populated here -->
             </div>
         </section>
+        <!-- Modal HTML -->
+        <div id="responseModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Respond to Request</h2>
+                <form id="responseForm">
+                    <input type="hidden" id="requestIdInput">
+                    <label for="responseTitle">Request Title:</label>
+                    <input type="text" id="responseTitle" name="title" disabled>
+                    <label for="suggestionDescription">Suggestion Description:</label>
+                    <textarea id="suggestionDescription" name="suggestionDescription" required></textarea>
+                    <label for="buys">Recommended Buys (JSON format):</label>
+                    <textarea id="buys" name="buys" required></textarea>
+                    <input type="hidden" id="userIdInput">
+
+                    <button type="submit">Submit Proposal</button>
+                </form>
+            </div>
+        </div>
+
     </main>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDs3lVnUrQNwENZVucKekgKrD8Ar7LIp7k",
@@ -102,16 +122,36 @@
 
                 testsSnapshot.forEach(doc => {
                     const test = doc.data();
-                    const requestHTML = `
-                    <div class="request">
-                        <h3>${test.title}</h3>
-                        <p>Date: ${test.date}</p>
-                        <p>Description: ${test.description}</p>
-                        <button class="prepare-report">Prepare Report</button>
-                        <button class="send-to-expert">Send to an Expert</button>
-                    </div>
-                `;
-                    requestsContainer.innerHTML += requestHTML;
+                    const requestDiv = document.createElement('div');
+                    requestDiv.className = 'request';
+                    requestDiv.innerHTML = `
+                    <h3>${test.title}</h3>
+                    <p>Date: ${test.date}</p>
+                    <p>Description: ${test.description}</p>
+                    `;
+
+                    // Prepare Report Button
+                    const prepareReportBtn = document.createElement('button');
+                    prepareReportBtn.innerText = 'Prepare Report';
+                    prepareReportBtn.className = 'prepare-report';
+                    prepareReportBtn.setAttribute('data-userid', doc.data().userID);
+                    prepareReportBtn.onclick = function () {
+                        document.getElementById('requestIdInput').value = doc.id; // Assuming you want to pass the request ID
+                        document.getElementById('responseTitle').value = test.title; // Set the title in the modal
+                        document.getElementById('userIdInput').value = this.getAttribute('data-userid');
+                        document.getElementById('responseModal').style.display = 'block';
+                        document.getElementById('responseModal').style.display = 'block';
+                    };
+
+                    // Send to Expert Button (assuming similar functionality will be implemented)
+                    const sendToExpertBtn = document.createElement('button');
+                    sendToExpertBtn.innerText = 'Send to an Expert';
+                    sendToExpertBtn.className = 'send-to-expert';
+
+                    requestDiv.appendChild(prepareReportBtn);
+                    requestDiv.appendChild(sendToExpertBtn);
+
+                    requestsContainer.appendChild(requestDiv);
                 });
             }
         } catch (error) {
@@ -119,17 +159,61 @@
         }
     }
 
+            document.addEventListener('DOMContentLoaded', function () {
+                // Place modal open/close functionality and form submission event listener here
+                const modal = document.getElementById('responseModal');
+                const closeModal = document.getElementsByClassName('close')[0];
 
-        const logoutButton = document.getElementById('logoutButton');
-        logoutButton.addEventListener('click', () => {
-                signOut(auth).then(() => {
+                closeModal.onclick = function () {
+                    modal.style.display = 'none';
+                }
+
+                window.onclick = function (event) {
+                    if (event.target == modal) {
+                        modal.style.display = 'none';
+                    }
+                }
+
+                document.getElementById('responseForm').addEventListener('submit', async function (e) {
+                    e.preventDefault(); // Prevent default form submission
+                    submitCroProposal(); // Function to submit proposal details to Firestore
+                });
+
+                const logoutButton = document.getElementById('logoutButton');
+                logoutButton.addEventListener('click', async () => {
+                    await signOut(auth);
                     console.log('User signed out successfully');
-                    window.location.href = 'login_page.html'; // Redirect to login page
-                }).catch((error) => {
-                    console.error('Sign out error', error);
+                    window.location.href = 'login_page.html';
                 });
             });
-    </script>
+
+            // Function to submit proposal details to Firestore
+            async function submitCroProposal() {
+                const requestID = document.getElementById('requestIdInput').value;
+                const userID = document.getElementById('userIdInput').value;
+                const title = document.getElementById('responseTitle').value;
+                const suggestionDescription = document.getElementById('suggestionDescription').value;
+                const buys = document.getElementById('buys').value;
+
+                try {
+                    await addDoc(collection(db, "cro_proposal"), {
+                        requestID,
+                        customerID: userID,
+                        croID: auth.currentUser.uid,
+                        title,
+                        suggestionDescription,
+                        buys: buys, // Assuming buys is a string; parse it if it's meant to be JSON
+                        timestamp: serverTimestamp() // Updated to use the imported function directly
+                    });
+
+                    console.log("Proposal successfully submitted.");
+                    document.getElementById('responseModal').style.display = 'none';
+                    document.getElementById('responseForm').reset();
+                } catch (error) {
+                    console.error("Error submitting proposal:", error);
+                }
+            }
+        </script>
 </body>
 
 </html>
