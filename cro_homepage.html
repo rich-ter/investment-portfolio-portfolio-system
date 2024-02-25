@@ -6,22 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CRO Portal</title>
     <link rel="stylesheet" href="style.css">
-        <style>
-            .request-container {
-                display: flex;
-                flex-wrap: wrap;
-                justify-content: space-around;
-                gap: 20px;
-            }
-        
-            .request {
-                flex: 1 1 calc(33.333% - 20px);
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                padding: 20px;
-                box-sizing: border-box;
-                margin: 10px 0;
-            }
-        </style>
+
 </head>
 
 <body>
@@ -33,6 +18,8 @@
         </div>
     </header>
     <main>
+    <div class="top-section-container">
+
         <section class="client-requests">
             <h2>Your Clients' Requests</h2>
             <div class="request-containe" id="clientRequestsContainer">
@@ -40,6 +27,19 @@
             </div>
         </section>
         <!-- Modal HTML -->
+        <section class="ma-responses">
+            <h2>Received MA Reports</h2>
+            <div class="ma-response-container" id="maResponsesContainer">
+                <!-- MA responses will be populated here -->
+            </div>
+        </section>
+            <section class="waiting-ma-reports">
+                <h2>Waiting MA Reports</h2>
+                <div class="waiting-ma-response-container" id="waitingMaResponsesContainer">
+                    <!-- Waiting MA responses will be populated here -->
+                </div>
+            </section>
+        </div>
         <div id="responseModal" class="modal">
             <div class="modal-content">
                 <span class="close">&times;</span>
@@ -63,7 +63,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDs3lVnUrQNwENZVucKekgKrD8Ar7LIp7k",
@@ -120,37 +120,51 @@
                 const testsQuery = query(collection(db, "test"), where("userID", "==", userId));
                 const testsSnapshot = await getDocs(testsQuery);
 
-                testsSnapshot.forEach(doc => {
-                    const test = doc.data();
+                testsSnapshot.forEach((docSnapshot) => {
+                    const test = docSnapshot.data();
+                    const requestId = docSnapshot.id; // Correct use of docSnapshot to get document ID
+
                     const requestDiv = document.createElement('div');
                     requestDiv.className = 'request';
                     requestDiv.innerHTML = `
                     <h3>${test.title}</h3>
                     <p>Date: ${test.date}</p>
                     <p>Description: ${test.description}</p>
-                    `;
+                `;
 
-                    // Prepare Report Button
                     const prepareReportBtn = document.createElement('button');
-                    prepareReportBtn.innerText = 'Prepare Report';
+                    prepareReportBtn.innerText = 'Prepare Proposal';
                     prepareReportBtn.className = 'prepare-report';
-                    prepareReportBtn.setAttribute('data-userid', doc.data().userID);
                     prepareReportBtn.onclick = function () {
-                        document.getElementById('requestIdInput').value = doc.id; // Assuming you want to pass the request ID
-                        document.getElementById('responseTitle').value = test.title; // Set the title in the modal
-                        document.getElementById('userIdInput').value = this.getAttribute('data-userid');
-                        document.getElementById('responseModal').style.display = 'block';
+                        document.getElementById('requestIdInput').value = requestId;
+                        document.getElementById('responseTitle').value = test.title;
                         document.getElementById('responseModal').style.display = 'block';
                     };
 
-                    // Send to Expert Button (assuming similar functionality will be implemented)
                     const sendToExpertBtn = document.createElement('button');
-                    sendToExpertBtn.innerText = 'Send to an Expert';
+                    sendToExpertBtn.innerText = 'Request Expert Report';
                     sendToExpertBtn.className = 'send-to-expert';
+                    sendToExpertBtn.onclick = async function () {
+                        const requestRef = doc(db, "test", requestId);
+                        await updateDoc(requestRef, {
+                            needsExpert: true,
+                            receivedExpertReport: false,
+                            status: "awaitingReview" // Add this line to set the status
+
+                        });
+
+                        const maReportRef = collection(db, "ma_report");
+                        await addDoc(maReportRef, {
+                            title: test.title,
+                            croId: auth.currentUser.uid,
+                            requestId: requestId,
+                        });
+
+                        console.log("Expert request sent and MA report initiated.and status updated to awaitingReview");
+                    };
 
                     requestDiv.appendChild(prepareReportBtn);
                     requestDiv.appendChild(sendToExpertBtn);
-
                     requestsContainer.appendChild(requestDiv);
                 });
             }
@@ -213,6 +227,8 @@
                     console.error("Error submitting proposal:", error);
                 }
             }
+
+
         </script>
 </body>
 

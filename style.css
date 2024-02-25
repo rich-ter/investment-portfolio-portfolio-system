@@ -583,3 +583,90 @@ form button:hover {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     margin-bottom: 20px;
 }
+
+.top-section-container {
+    display: flex;
+    justify-content: space-around;
+    align-items: start;
+    flex-wrap: wrap;
+    /* Allows sections to wrap if the screen is too narrow */
+}
+
+.client-requests,
+.ma-responses,
+.waiting-ma-reports {
+    flex-basis: 30%;
+    /* Adjusts the width of each section */
+    margin: 10px;
+    /* Adds some space around each section */
+}
+
+.request-container,
+.ma-response-container,
+.waiting-ma-response-container {
+    /* Styles for the containers */
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    height: auto;
+    /* Or set a specific height */
+    overflow-y: auto;
+    /* Adds scroll if content is too long */
+}
+
+h2 {
+    text-align: center;
+}
+
+.top-section-container {
+    display: flex;
+    justify-content: space-between;
+    /* This will space out the sections equally */
+    margin-bottom: 40px;
+    /* Adjust as needed */
+}
+
+/* Assuming you want to keep your existing styles for .request-container,
+   you might need similar styles for your MA reports containers */
+.ma-response-container,
+.waiting-ma-response-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    gap: 20px;
+    /* Adjust gap as needed */
+}
+
+/* If the sections are too close to each other or to the edges of the main container, you can adjust their widths */
+.client-requests,
+.ma-responses,
+.waiting-ma-reports {
+    flex: 1;
+    /* This makes each section take equal width */
+    margin: 0 10px;
+    /* Adjusts spacing between sections */
+}
+
+/* Ensure the main container can accommodate side by side sections */
+main {
+    max-width: 1200px;
+    /* You might need to adjust this based on your design */
+    margin: 20px auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Adjustments to ensure content does not overflow the viewport width */
+@media screen and (max-width: 1200px) {
+    .top-section-container {
+        flex-direction: column;
+    }
+
+    .client-requests,
+    .ma-responses,
+    .waiting-ma-reports {
+        margin: 10px 0;
+        /* Stack sections vertically on smaller screens */
+    }
+}
