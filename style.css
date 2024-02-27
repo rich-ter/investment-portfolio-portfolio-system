@@ -670,3 +670,18 @@ main {
         /* Stack sections vertically on smaller screens */
     }
 }
+
+.requests-wrapper {
+    display: flex;
+    justify-content: space-between;
+}
+
+.pending-request,
+.completed-requests{
+    flex: 1;
+    /* This makes each section take equal width */
+    margin: 0 10px;
+    /* Adds a little space between the sections */
+}
+
+/* Add any additional styling as needed */

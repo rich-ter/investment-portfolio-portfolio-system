@@ -18,23 +18,60 @@
         </div>
     </header>
     <main>
-        <section class="client-requests">
-            <h2>CRO Consultation Requests</h2>
-            <div class="request" id="croRequestsContainer">
-                <!-- Consultation requests will be populated here -->
-            </div>
-        </section>
-        <section class="ma-reports">
-            <h2>MA Reports</h2>
-            <div id="maReportsContainer">
-                <!-- MA reports will be populated here -->
-            </div>
-        </section>
+        <div class="requests-wrapper"> <!-- Wrapper for flex display -->
+            <section class="client-requests">
+                <h2>Pending Requests To Review</h2>
+                <div id="croRequestsContainer">
+                    <!-- Consultation requests will be populated here -->
+                </div>
+            </section>
+            <section class="ma-reports">
+                <h2>Your Reports</h2>
+                <div id="maReportsContainer">
+                    <!-- MA reports will be populated here -->
+                </div>
+            </section>
+                    <div id="responseModal" class="modal">
+                        <div class="modal-content">
+                            <span class="close">&times;</span>
+                            <h1>Investment Report</h1>
+
+
+                            <h2> Portfolio Revision Request Info</h2>
+                            <div id="requestInfo">
+                                <p><strong>Status:</strong> <span id="modalStatus">Loading...</span></p>
+                                <p><strong>Date:</strong> <span id="modalDate">Loading...</span></p>
+                                <p><strong>Description:</strong> <span id="modalDescription">Loading...</span></p>
+                                <p><strong>Request ID:</strong> <span id="modalRequestId">Loading...</span></p>
+                                <p><strong>CRO ID:</strong> <span id="modalCroId">Loading...</span></p>
+                                <p><strong>Title:</strong> <span id="modalTitle">Loading...</span></p>
+                            </div>
+
+                                    <hr> <!-- Horizontal line separator -->
+                            <h2> Report Response</h2>
+
+                            <form id="responseForm">
+                                <input type="hidden" id="requestIdInput">
+                                <label for="responseTitle">Request Title:</label>
+                                <input type="text" id="responseTitle" name="title" disabled>
+                                <p><strong>Test Title:</strong> <span id="modalTestTitle"></span></p>
+
+                                <label for="suggestionDescription">Suggestion Description:</label>
+                                <textarea id="suggestionDescription" name="suggestionDescription" required></textarea>
+                                <label for="buys">Recommended Buys (JSON format):</label>
+                                <textarea id="buys" name="buys" required></textarea>
+                                <input type="hidden" id="userIdInput">
+                    
+                                <button type="submit">Submit Report</button>
+                            </form>
+                        </div>
+                    </div>
+        </div>
     </main>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs,updateDoc, doc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDs3lVnUrQNwENZVucKekgKrD8Ar7LIp7k",
@@ -48,38 +85,136 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            const userDocRef = doc(db, "users", user.uid);
-            const userDocSnap = await getDoc(userDocRef);
-            if (userDocSnap.exists()) {
-                const userData = userDocSnap.data();
-                document.getElementById('userName').textContent = userData.name || 'Unnamed MA';
-            } else {
-                console.error("User document not found");
-                // Handle case where user document doesn't exist
-            }
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Fetch user data
+                const userDocRef = doc(db, "users", user.uid);
+                const userDocSnap = await getDoc(userDocRef);
+                if (userDocSnap.exists()) {
+                    const userData = userDocSnap.data();
+                    document.getElementById('userName').textContent = userData.name || 'Unnamed MA';
+                } else {
+                    console.error("User document not found");
+                }
 
-            // Fetch and display MA reports
-            const maReportsRef = collection(db, "ma_report");
-            const snapshot = await getDocs(maReportsRef);
-            const maReportsContainer = document.getElementById("maReportsContainer");
-            snapshot.forEach(doc => {
-                const report = doc.data();
-                const reportDiv = document.createElement("div");
-                reportDiv.classList.add("ma-report");
-                reportDiv.innerHTML = `
-                    <h3>${report.title}</h3>
-                    <p>Report ID: ${doc.id}</p>
-                    <!-- Add more details as needed -->
-                `;
-                maReportsContainer.appendChild(reportDiv);
-            });
-        } else {
-            console.log("No user signed in.");
-            window.location.href = 'login_page.html';
+                // Correctly fetch and display MA reports filtered by expertId
+                const maReportsRef = collection(db, "ma_report");
+                const q = query(maReportsRef, where("expertId", "==", user.uid)); // Corrected filtering
+                const snapshot = await getDocs(q);
+                const maReportsContainer = document.getElementById("maReportsContainer");
+                maReportsContainer.innerHTML = ''; // Clear previous content
+                if (snapshot.empty) {
+                    maReportsContainer.innerHTML = '<p>No reports found for this MA.</p>';
+                } else {
+                    snapshot.forEach(doc => {
+                        const report = doc.data();
+                        const reportDiv = document.createElement("div");
+                        reportDiv.classList.add("ma-report");
+                        reportDiv.innerHTML = `
+                        <h3>${report.title}</h3>
+                        <p>Report ID: ${doc.id}</p>
+                        <p>Expert ID: ${report.expertId}</p> 
+                        <button class="prepare-report-btn"
+                                data-report-id="${doc.id}" 
+                                data-report-title="${report.title}"
+                                data-status="${report.status}"
+                                data-date="${report.date}"
+                                data-description="${report.description}"
+                                data-request-id="${report.requestId}"
+                                data-cro-id="${report.croId}">
+                            Prepare Report
+                        </button>
+                                <!-- Ensure this matches your document structure -->
+                        <!-- Add more details as needed -->
+                    `;
+                        maReportsContainer.appendChild(reportDiv);
+                    });
+                }
+            } else {
+                console.log("No user signed in.");
+                window.location.href = 'login_page.html';
+            }
+        });
+
+    document.addEventListener('click', function (e) {
+        if (e.target && e.target.classList.contains('prepare-report-btn')) {
+            // Retrieve all data attributes from the clicked button
+            const reportId = e.target.getAttribute('data-report-id');
+            const reportTitle = e.target.getAttribute('data-report-title');
+            const status = e.target.getAttribute('data-status');
+            const date = e.target.getAttribute('data-date');
+            const description = e.target.getAttribute('data-description');
+            const requestId = e.target.getAttribute('data-request-id');
+            const croId = e.target.getAttribute('data-cro-id');
+
+            // Update modal content
+            showModal(reportId, reportTitle, status, date, description, requestId, croId);
         }
     });
+
+    function showModal(reportId, reportTitle, status, date, description, requestId, croId) {
+        // Set the hidden input value for the reportId
+        document.getElementById('requestIdInput').value = reportId;
+
+        // Update text content of modal elements
+        document.getElementById('modalStatus').textContent = status || 'N/A';
+        document.getElementById('modalDate').textContent = date || 'N/A';
+        document.getElementById('modalDescription').textContent = description || 'N/A';
+        document.getElementById('modalRequestId').textContent = requestId || 'N/A';
+        document.getElementById('modalCroId').textContent = croId || 'N/A';
+        document.getElementById('modalTitle').textContent = reportTitle || 'N/A';
+
+        // Show the modal
+        responseModal.style.display = 'block';
+    }
+
+    const responseModal = document.getElementById('responseModal');
+    const closeModal = responseModal.querySelector('.close');
+
+    // Close modal event listener
+    closeModal.addEventListener('click', () => {
+        responseModal.style.display = 'none';
+    });
+
+    // Prevent form submission for demonstration purposes
+    document.getElementById('responseForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        console.log("Form submitted");
+        responseModal.style.display = 'none';
+    });
+
+    document.getElementById('responseForm').addEventListener('submit', async (e) => {
+        e.preventDefault(); // Prevent the default form submission behavior
+
+        // Retrieve form values
+        const requestId = document.getElementById('requestIdInput').value;
+        const suggestionDescription = document.getElementById('suggestionDescription').value;
+        const buys = document.getElementById('buys').value;
+
+        // No need to parse `buys` as JSON
+
+        try {
+            // Reference the Firestore document by requestId (assuming you have a way to map requestId to the document ID)
+            const requestDocRef = doc(db, "ma_report", requestId);
+
+            // Update the document with the new values
+            await updateDoc(requestDocRef, {
+                suggestionDescription: suggestionDescription,
+                recommendedBuys: buys, // This is now a string, not a JSON object
+                status: "reviewed" // Adding this line to update the status
+
+            });
+
+            console.log("Report updated successfully");
+            // Close the modal or clear the form as needed
+            responseModal.style.display = 'none';
+        } catch (error) {
+            console.error("Error updating document:", error);
+            // Handle error or alert the user
+        }
+    });
+
+
 
     const logoutButton = document.getElementById('logoutButton');
     logoutButton.addEventListener('click', () => {

@@ -86,6 +86,8 @@
                     if (userData.role === 'cro') {
                         document.getElementById('userName').textContent = userData.name || 'Unnamed CRO';
                         displayClientRequests(user.uid); // Call this function here
+                        displayAwaitingReviewMAReports(); // Add this line to call your function
+
                     } else {
                         console.error('Access denied. User is not a CRO.');
                         // Optionally, redirect to a different page
@@ -145,19 +147,32 @@
                     sendToExpertBtn.innerText = 'Request Expert Report';
                     sendToExpertBtn.className = 'send-to-expert';
                     sendToExpertBtn.onclick = async function () {
+
+                        const expertIds = ["CX3AmAdXilTcChbb8I5hMVoQqac2", "R8iabUwvB7UrK6g3qGioAngjN192"]; // Array of MA (expert) IDs
+                        const randomIndex = Math.floor(Math.random() * expertIds.length); // Generate a random index
+                        const selectedExpertId = expertIds[randomIndex]; // Select an MA ID based on the random index
+
                         const requestRef = doc(db, "test", requestId);
                         await updateDoc(requestRef, {
                             needsExpert: true,
-                            receivedExpertReport: false,
-                            status: "awaitingReview" // Add this line to set the status
+                            status: "awaitingReview", // Add this line to set the status
+                            sentToCustomer: false,
+                            expertId: selectedExpertId // Assign the randomly selected MA (expert) ID
 
-                        });
+                        })
+                        window.location.reload();
+
+                        ;
 
                         const maReportRef = collection(db, "ma_report");
                         await addDoc(maReportRef, {
                             title: test.title,
+                            description: test.description, // Include the description of the test
+                            date: test.date, // Include the date of the test
                             croId: auth.currentUser.uid,
+                            expertId: selectedExpertId,
                             requestId: requestId,
+                            status: "pending" // You mig
                         });
 
                         console.log("Expert request sent and MA report initiated.and status updated to awaitingReview");
@@ -172,6 +187,39 @@
             console.error("Error displaying client requests:", error);
         }
     }
+
+
+    async function displayAwaitingReviewMAReports() {
+        try {
+            // Assuming 'test' collection holds the requests with their statuses
+            const requestsQuery = query(collection(db, "test"), where("status", "==", "awaitingReview"));
+            const requestsSnapshot = await getDocs(requestsQuery);
+
+            const waitingMaResponsesContainer = document.getElementById('waitingMaResponsesContainer');
+            waitingMaResponsesContainer.innerHTML = ''; // Clear previous content
+
+            requestsSnapshot.forEach((docSnapshot) => {
+                const request = docSnapshot.data();
+                const requestDiv = document.createElement('div');
+                requestDiv.className = 'request';
+                requestDiv.innerHTML = `
+                <h3>${request.title}</h3>
+                <p>Description: ${request.description}</p>
+                <p>Status: ${request.status}</p>
+                <p>Expert ID: ${request.expertId}</p>
+            `;
+
+                // Append the created div to the container
+                waitingMaResponsesContainer.appendChild(requestDiv);
+
+            });
+
+
+        } catch (error) {
+            console.error("Error displaying requests awaiting MA review:", error);
+        }
+    }
+
 
             document.addEventListener('DOMContentLoaded', function () {
                 // Place modal open/close functionality and form submission event listener here
