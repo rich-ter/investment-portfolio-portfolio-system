@@ -21,7 +21,7 @@
     <div class="top-section-container">
 
         <section class="client-requests">
-            <h2>Your Clients' Requests</h2>
+            <h2>Pending Client Requests</h2>
             <div class="request-containe" id="clientRequestsContainer">
                 <!-- Client requests will be populated here -->
             </div>
@@ -59,6 +59,28 @@
             </div>
         </div>
 
+        <div id="maReportModal" class="modal">
+            <div class="modal-content">
+                <span class="close" id="closeMaReportModal">&times;</span>
+                <h2>Prepare Proposal Based on MA Report</h2>
+                <form id="maReportForm">
+                    <input type="hidden" id="maRequestIdInput">
+                    <label for="maExpertId">Expert ID:</label>
+                    <input type="text" id="maExpertId" name="expertId" disabled>
+
+                    <label for="maResponseTitle">Report Title:</label>
+                    <input type="text" id="maResponseTitle" name="title" disabled>
+                    <label for="maSuggestionDescription">Suggestion Description:</label>
+                    <textarea id="maSuggestionDescription" name="suggestionDescription" required></textarea>
+                    <label for="maRecommendedBuys">Recommended Buys (JSON format):</label>
+                    <textarea id="maRecommendedBuys" name="buys" required></textarea>
+                    <!-- Additional fields as necessary -->
+                    <button type="submit">Submit Proposal based on report</button>
+                </form>
+            </div>
+        </div>
+
+
     </main>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -87,6 +109,8 @@
                         document.getElementById('userName').textContent = userData.name || 'Unnamed CRO';
                         displayClientRequests(user.uid); // Call this function here
                         displayAwaitingReviewMAReports(); // Add this line to call your function
+                                displayReceivedMAReports(); // Call this to display received MA reports
+
 
                     } else {
                         console.error('Access denied. User is not a CRO.');
@@ -132,6 +156,7 @@
                     <h3>${test.title}</h3>
                     <p>Date: ${test.date}</p>
                     <p>Description: ${test.description}</p>
+
                 `;
 
                     const prepareReportBtn = document.createElement('button');
@@ -139,7 +164,11 @@
                     prepareReportBtn.className = 'prepare-report';
                     prepareReportBtn.onclick = function () {
                         document.getElementById('requestIdInput').value = requestId;
+                        document.getElementById('userIdInput').value = userId; // Set the customerID in the form
+                        console.log(userId)
                         document.getElementById('responseTitle').value = test.title;
+                        document.getElementById('userIdInput').value = test.userID; // This is the customerID for the proposal
+
                         document.getElementById('responseModal').style.display = 'block';
                     };
 
@@ -221,6 +250,7 @@
     }
 
 
+
             document.addEventListener('DOMContentLoaded', function () {
                 // Place modal open/close functionality and form submission event listener here
                 const modal = document.getElementById('responseModal');
@@ -249,28 +279,109 @@
                 });
             });
 
+            
+    async function displayReceivedMAReports() {
+        const maResponsesContainer = document.getElementById('maResponsesContainer');
+        maResponsesContainer.innerHTML = ''; // Clear previous content
+
+        try {
+            const croId = auth.currentUser.uid; // Using the logged-in user's UID as the CRO ID
+            const maReportsQuery = query(collection(db, "ma_report"), where("croId", "==", croId));
+            const querySnapshot = await getDocs(maReportsQuery);
+
+            if (querySnapshot.empty) {
+                maResponsesContainer.innerHTML = '<p>No reports found for this CRO.</p>';
+                return;
+            }
+
+            querySnapshot.forEach((doc) => {
+                const report = doc.data();
+                if (report.status === "reviewed") {
+
+                const reportDiv = document.createElement('div');
+                reportDiv.className = 'report';
+                reportDiv.innerHTML = `
+                <h3>${report.title}</h3>
+                <p>Description: ${report.description}</p>
+                <p>Status: ${report.status}</p>
+                <p>Date: ${report.date}</p>
+                <p>CRO ID: ${report.croId}</p>
+                <p>Expert ID: ${report.expertId}</p>
+            `; // Display report details
+
+                // Create and append the "Prepare Proposal" button for MA reports
+                const prepareProposalBtn = document.createElement('button');
+                prepareProposalBtn.textContent = 'Prepare Proposal Based on Report';
+                prepareProposalBtn.className = 'prepare-report';
+                prepareProposalBtn.onclick = () => {
+                    // Populate the MA report modal with data from the MA report
+                        document.getElementById('maExpertId').value = report.expertId;
+
+                    document.getElementById('maRequestIdInput').value = doc.id;
+                    document.getElementById('maResponseTitle').value = report.title;
+                    document.getElementById('maSuggestionDescription').value = report.suggestionDescription;
+                    document.getElementById('maRecommendedBuys').value = report.recommendedBuys;
+                    document.getElementById('maRecommendedBuys').value = report.croId;
+
+                    // Show the MA report modal
+                    document.getElementById('maReportModal').style.display = 'block';
+                };
+
+                reportDiv.appendChild(prepareProposalBtn);
+                maResponsesContainer.appendChild(reportDiv);
+                }
+            });
+        } catch (error) {
+            console.error("Error displaying MA reports for CRO:", error);
+            maResponsesContainer.innerHTML = '<p>Error fetching reports. Please check the console for more information.</p>';
+        }
+    }
+
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+            const closeMaReportModalBtn = document.getElementById('closeMaReportModal');
+            if (closeMaReportModalBtn) {
+                closeMaReportModalBtn.addEventListener('click', () => {
+                    document.getElementById('maReportModal').style.display = 'none';
+                });
+            }
+
+            // Other DOMContentLoaded logic...
+        });
+
             // Function to submit proposal details to Firestore
             async function submitCroProposal() {
                 const requestID = document.getElementById('requestIdInput').value;
-                const userID = document.getElementById('userIdInput').value;
                 const title = document.getElementById('responseTitle').value;
                 const suggestionDescription = document.getElementById('suggestionDescription').value;
                 const buys = document.getElementById('buys').value;
 
                 try {
-                    await addDoc(collection(db, "cro_proposal"), {
-                        requestID,
-                        customerID: userID,
-                        croID: auth.currentUser.uid,
-                        title,
-                        suggestionDescription,
-                        buys: buys, // Assuming buys is a string; parse it if it's meant to be JSON
-                        timestamp: serverTimestamp() // Updated to use the imported function directly
-                    });
+                    // First, fetch the corresponding request document to get the userID
+                    const requestRef = doc(db, "test", requestID);
+                    const requestSnap = await getDoc(requestRef);
+                    if (requestSnap.exists()) {
+                        const customerID = requestSnap.data().userID; // This is the userID related to the request
 
-                    console.log("Proposal successfully submitted.");
-                    document.getElementById('responseModal').style.display = 'none';
-                    document.getElementById('responseForm').reset();
+                        // Now that you have the customerID, proceed to add the proposal document
+                        await addDoc(collection(db, "cro_proposal"), {
+                            requestID,
+                            customerID, // Use the fetched customerID
+                            croID: auth.currentUser.uid,
+                            title,
+                            suggestionDescription,
+                            buys: buys,
+                            timestamp: serverTimestamp()
+                        });
+                        console.log(customerID)
+                        console.log("Proposal successfully submitted.");
+                        document.getElementById('responseModal').style.display = 'none';
+                        document.getElementById('responseForm').reset();
+                    } else {
+                        console.error("No such request document!");
+                        // Handle the error, perhaps notify the user or log more details
+                    }
                 } catch (error) {
                     console.error("Error submitting proposal:", error);
                 }

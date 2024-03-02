@@ -192,21 +192,28 @@ section:not(:last-of-type) {
                     const listItem = document.createElement("li");
                     listItem.classList.add("ma-report-item");
                     listItem.innerHTML = `
-                    <h3>${report.title}</h3>
-                    <p>Report ID: ${doc.id}</p>
-                    <p>Status: ${report.status}</p>
-                    <p>Expert ID: ${report.expertId}</p>
-                    <button class="prepare-report-btn"
-                            data-report-id="${doc.id}"
-                            data-report-title="${report.title}"
-                            data-status="${report.status}"
-                            data-date="${report.date}"
-                            data-description="${report.description}"
-                            data-request-id="${report.requestId}"
-                            data-cro-id="${report.croId}">
-                        Prepare Report
-                    </button>
-                `;
+        <h3>${report.title}</h3>
+        <p>Report ID: ${doc.id}</p>
+        <p>Status: ${report.status}</p>
+        <p>Expert ID: ${report.expertId}</p>
+    `;
+
+                    // Conditionally add the "Prepare Report" button only if the report status is "pending"
+                    if (report.status === "pending") {
+                        const prepareReportBtn = document.createElement("button");
+                        prepareReportBtn.classList.add("prepare-report-btn");
+                        prepareReportBtn.setAttribute("data-report-id", doc.id);
+                        prepareReportBtn.setAttribute("data-report-title", report.title);
+                        prepareReportBtn.setAttribute("data-status", report.status);
+                        prepareReportBtn.setAttribute("data-date", report.date);
+                        prepareReportBtn.setAttribute("data-description", report.description);
+                        prepareReportBtn.setAttribute("data-request-id", report.requestId);
+                        prepareReportBtn.setAttribute("data-cro-id", report.croId);
+                        prepareReportBtn.textContent = "Prepare Report";
+
+                        // Append the button to the listItem
+                        listItem.appendChild(prepareReportBtn);
+                    }
 
                     // Append to the correct list based on report status
                     if (report.status === "pending") {
