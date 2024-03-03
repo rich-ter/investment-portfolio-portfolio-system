@@ -11,7 +11,7 @@
 
 <body>
     <header>
-        <h1>Απαλλακτική Εργασία Νεφουπολογιστικής</h1>
+        <h1>Διαχείριση Επιχειρησιακών Διεργασιών & Νεφοϋπολογιστική</h1>
         <div class="user-section">
             <span class="user-name"> CRO: <span id="userName">Loading...</span></div>
             <button id="logoutButton">Logout</button>
@@ -21,7 +21,7 @@
     <div class="top-section-container">
 
         <section class="client-requests">
-            <h2>Pending Client Requests</h2>
+            <h2>All Client Requests</h2>
             <div class="request-containe" id="clientRequestsContainer">
                 <!-- Client requests will be populated here -->
             </div>
@@ -34,7 +34,7 @@
             </div>
         </section>
             <section class="waiting-ma-reports">
-                <h2>Waiting MA Reports</h2>
+                <h2>Requested MA Report for</h2>
                 <div class="waiting-ma-response-container" id="waitingMaResponsesContainer">
                     <!-- Waiting MA responses will be populated here -->
                 </div>
@@ -44,18 +44,18 @@
             <div class="modal-content">
                 <span class="close">&times;</span>
                 <h2>Respond to Request</h2>
-                <form id="responseForm">
-                    <input type="hidden" id="requestIdInput">
-                    <label for="responseTitle">Request Title:</label>
-                    <input type="text" id="responseTitle" name="title" disabled>
-                    <label for="suggestionDescription">Suggestion Description:</label>
-                    <textarea id="suggestionDescription" name="suggestionDescription" required></textarea>
-                    <label for="buys">Recommended Buys (JSON format):</label>
-                    <textarea id="buys" name="buys" required></textarea>
-                    <input type="hidden" id="userIdInput">
+<form id="responseForm">
+    <input type="hidden" id="requestIdInput">
+    <input type="hidden" id="userIdInput"> <!-- Ensure this is added -->
+    <label for="responseTitle">Request Title:</label>
+    <input type="text" id="responseTitle" name="title" disabled>
+    <label for="suggestionDescription">Suggestion Description:</label>
+    <textarea id="suggestionDescription" name="suggestionDescription" required></textarea>
+    <label for="buys">Recommended Buys:</label>
+    <textarea id="buys" name="buys" required></textarea>
 
-                    <button type="submit">Submit Proposal</button>
-                </form>
+    <button type="submit">Submit Proposal</button>
+</form>
             </div>
         </div>
 
@@ -66,8 +66,9 @@
                 <form id="maReportForm">
                     <input type="hidden" id="maRequestIdInput">
                     <label for="maExpertId">Expert ID:</label>
-                    <input type="text" id="maExpertId" name="expertId" disabled>
-
+                    <input type="text" id="maExpertId" name="customerId" disabled>
+                    <label for="maCustomerId">Customer ID:</label>
+                    <input type="text" id="maCustomerId" name="customerId" disabled>
                     <label for="maResponseTitle">Report Title:</label>
                     <input type="text" id="maResponseTitle" name="title" disabled>
                     <label for="maSuggestionDescription">Suggestion Description:</label>
@@ -75,6 +76,9 @@
                     <label for="maRecommendedBuys">Recommended Buys (JSON format):</label>
                     <textarea id="maRecommendedBuys" name="buys" required></textarea>
                     <!-- Additional fields as necessary -->
+                    <!-- In your MA report modal form -->
+                    <input type="hidden" id="maRequestIdInput" name="requestId">
+
                     <button type="submit">Submit Proposal based on report</button>
                 </form>
             </div>
@@ -163,48 +167,83 @@
                     prepareReportBtn.innerText = 'Prepare Proposal';
                     prepareReportBtn.className = 'prepare-report';
                     prepareReportBtn.onclick = function () {
-                        document.getElementById('requestIdInput').value = requestId;
-                        document.getElementById('userIdInput').value = userId; // Set the customerID in the form
-                        console.log(userId)
-                        document.getElementById('responseTitle').value = test.title;
-                        document.getElementById('userIdInput').value = test.userID; // This is the customerID for the proposal
+                        // Assuming `requestId` is available in this scope.
+                        const requestId = docSnapshot.id; // Make sure you have the correct document ID here.
+                        const customerIDElement = document.getElementById('userIdInput'); // Assuming this is the correct ID for the customer ID field in your modal.
 
-                        document.getElementById('responseModal').style.display = 'block';
+                        // Fetch additional request details as needed.
+                        const requestRef = doc(db, "test", requestId);
+                        getDoc(requestRef).then(docSnap => {
+                            if (!docSnap.exists()) {
+                                console.error("Request document not found");
+                                return;
+                            }
+                            const requestData = docSnap.data();
+
+                            // Ensure all elements are present before setting their values.
+                            const responseTitleElement = document.getElementById('responseTitle');
+                            const suggestionDescriptionElement = document.getElementById('suggestionDescription');
+                            const buysElement = document.getElementById('buys');
+                            const requestIdInputElement = document.getElementById('requestIdInput');
+
+                            if (responseTitleElement && suggestionDescriptionElement && buysElement && requestIdInputElement && customerIDElement) {
+                                responseTitleElement.value = requestData.title;
+                                suggestionDescriptionElement.value = requestData.description; // Adjust based on actual field names
+                                // Populate other fields as needed.
+                                requestIdInputElement.value = requestId;
+                                customerIDElement.value = requestData.userID; // Adjust based on actual field names.
+
+                                // Now, open the modal.
+                                document.getElementById('responseModal').style.display = 'block';
+                            } else {
+                                console.error("One or more modal elements could not be found.");
+                            }
+                        }).catch(error => {
+                            console.error("Error fetching request details:", error);
+                        });
                     };
+
+
 
                     const sendToExpertBtn = document.createElement('button');
                     sendToExpertBtn.innerText = 'Request Expert Report';
                     sendToExpertBtn.className = 'send-to-expert';
                     sendToExpertBtn.onclick = async function () {
+                        const expertIds = ["CX3AmAdXilTcChbb8I5hMVoQqac2", "R8iabUwvB7UrK6g3qGioAngjN192"];
+                        const randomIndex = Math.floor(Math.random() * expertIds.length);
+                        const selectedExpertId = expertIds[randomIndex];
 
-                        const expertIds = ["CX3AmAdXilTcChbb8I5hMVoQqac2", "R8iabUwvB7UrK6g3qGioAngjN192"]; // Array of MA (expert) IDs
-                        const randomIndex = Math.floor(Math.random() * expertIds.length); // Generate a random index
-                        const selectedExpertId = expertIds[randomIndex]; // Select an MA ID based on the random index
+                        // Fetch the test document to obtain the customerID
+                        const testDocRef = doc(db, "test", requestId);
+                        const testDocSnap = await getDoc(testDocRef);
+                        if (!testDocSnap.exists()) {
+                            console.error("No such test document exists!");
+                            return; // Early return if test document not found
+                        }
+                        const customerID = testDocSnap.data().userID; // Assuming the field for customer ID in the test document is userID
 
                         const requestRef = doc(db, "test", requestId);
                         await updateDoc(requestRef, {
                             needsExpert: true,
-                            status: "awaitingReview", // Add this line to set the status
+                            status: "awaitingReview",
                             sentToCustomer: false,
-                            expertId: selectedExpertId // Assign the randomly selected MA (expert) ID
-
-                        })
-                        window.location.reload();
-
-                        ;
+                            expertId: selectedExpertId
+                        });
 
                         const maReportRef = collection(db, "ma_report");
                         await addDoc(maReportRef, {
-                            title: test.title,
-                            description: test.description, // Include the description of the test
-                            date: test.date, // Include the date of the test
+                            title: testDocSnap.data().title, // Use title from the test document if needed
+                            description: testDocSnap.data().description, // Use description from the test document if needed
+                            date: testDocSnap.data().date, // Use date from the test document if needed
                             croId: auth.currentUser.uid,
                             expertId: selectedExpertId,
                             requestId: requestId,
-                            status: "pending" // You mig
+                            customerId: customerID, // Include the fetched customerID
+                            status: "pending"
                         });
 
-                        console.log("Expert request sent and MA report initiated.and status updated to awaitingReview");
+                        console.log("Expert request sent, MA report initiated, and status updated to awaitingReview.");
+                        window.location.reload();
                     };
 
                     requestDiv.appendChild(prepareReportBtn);
@@ -220,35 +259,60 @@
 
     async function displayAwaitingReviewMAReports() {
         try {
-            // Assuming 'test' collection holds the requests with their statuses
-            const requestsQuery = query(collection(db, "test"), where("status", "==", "awaitingReview"));
-            const requestsSnapshot = await getDocs(requestsQuery);
+            if (!auth.currentUser) {
+                console.log("No CRO is currently signed in.");
+                return;
+            }
+            const croUid = auth.currentUser.uid;
+            console.log('Running displayAwaitingReviewMAReports for CRO UID:', croUid);
+
+            // Query to find users managed by this CRO
+            const usersQuery = query(collection(db, "users"), where("cro_uid", "==", croUid));
+            const usersSnapshot = await getDocs(usersQuery);
 
             const waitingMaResponsesContainer = document.getElementById('waitingMaResponsesContainer');
             waitingMaResponsesContainer.innerHTML = ''; // Clear previous content
 
-            requestsSnapshot.forEach((docSnapshot) => {
-                const request = docSnapshot.data();
-                const requestDiv = document.createElement('div');
-                requestDiv.className = 'request';
-                requestDiv.innerHTML = `
-                <h3>${request.title}</h3>
-                <p>Description: ${request.description}</p>
-                <p>Status: ${request.status}</p>
-                <p>Expert ID: ${request.expertId}</p>
-            `;
+            if (usersSnapshot.empty) {
+                waitingMaResponsesContainer.innerHTML = '<p>No clients associated with this CRO.</p>';
+                return;
+            }
 
-                // Append the created div to the container
-                waitingMaResponsesContainer.appendChild(requestDiv);
+            // Extract the user IDs of the managed users
+            const userIds = usersSnapshot.docs.map(doc => doc.data().uid);
+            let hasAwaitingReviewRequests = false;
 
-            });
+            for (const userId of userIds) {
+                // For each user ID, query the 'test' collection for awaitingReview status
+                const testsQuery = query(collection(db, "test"), where("userID", "==", userId), where("status", "==", "awaitingReview"));
+                const testsSnapshot = await getDocs(testsQuery);
 
+                testsSnapshot.forEach(docSnapshot => {
+                    hasAwaitingReviewRequests = true;
+                    const request = docSnapshot.data();
+                    const requestId = docSnapshot.id;
+
+                    const requestDiv = document.createElement('div');
+                    requestDiv.className = 'request';
+                    requestDiv.innerHTML = `
+                    <h3>${request.title}</h3>
+                    <p>Date: ${request.date}</p>
+                    <p>Status: ${request.status}</p>
+                `;
+
+                    waitingMaResponsesContainer.appendChild(requestDiv);
+                });
+            }
+
+            if (!hasAwaitingReviewRequests) {
+                waitingMaResponsesContainer.innerHTML = '<p>No awaiting review requests found for clients associated with this CRO.</p>';
+            }
 
         } catch (error) {
-            console.error("Error displaying requests awaiting MA review:", error);
+            console.error("Error displaying awaiting review requests:", error);
+            waitingMaResponsesContainer.innerHTML = '<p>Error fetching requests. Please check the console for more details.</p>';
         }
     }
-
 
 
             document.addEventListener('DOMContentLoaded', function () {
@@ -315,14 +379,14 @@
                 prepareProposalBtn.className = 'prepare-report';
                 prepareProposalBtn.onclick = () => {
                     // Populate the MA report modal with data from the MA report
-                        document.getElementById('maExpertId').value = report.expertId;
-
+                    // Populate the MA report modal with data, including setting the customerID
+                    document.getElementById('maExpertId').value = report.expertId;
                     document.getElementById('maRequestIdInput').value = doc.id;
                     document.getElementById('maResponseTitle').value = report.title;
                     document.getElementById('maSuggestionDescription').value = report.suggestionDescription;
                     document.getElementById('maRecommendedBuys').value = report.recommendedBuys;
-                    document.getElementById('maRecommendedBuys').value = report.croId;
 
+        
                     // Show the MA report modal
                     document.getElementById('maReportModal').style.display = 'block';
                 };
@@ -346,46 +410,74 @@
                     document.getElementById('maReportModal').style.display = 'none';
                 });
             }
+        // Event listener for client request form submission
+        document.getElementById('responseForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            submitCroProposal('clientRequest');
+        });
 
+        // Event listener for MA report form submission
+        document.getElementById('maReportForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            submitCroProposal('maReport');
+        });
             // Other DOMContentLoaded logic...
         });
 
-            // Function to submit proposal details to Firestore
-            async function submitCroProposal() {
-                const requestID = document.getElementById('requestIdInput').value;
-                const title = document.getElementById('responseTitle').value;
-                const suggestionDescription = document.getElementById('suggestionDescription').value;
-                const buys = document.getElementById('buys').value;
+    async function submitCroProposal(context) {
+        let requestID, title, suggestionDescription, buys, customerID;
 
-                try {
-                    // First, fetch the corresponding request document to get the userID
-                    const requestRef = doc(db, "test", requestID);
-                    const requestSnap = await getDoc(requestRef);
-                    if (requestSnap.exists()) {
-                        const customerID = requestSnap.data().userID; // This is the userID related to the request
+        if (context === 'clientRequest') {
+            // Collect values from the "client request" modal
+            requestID = document.getElementById('requestIdInput').value;
+            title = document.getElementById('responseTitle').value;
+            suggestionDescription = document.getElementById('suggestionDescription').value;
+            buys = document.getElementById('buys').value;
+            customerID = document.getElementById('userIdInput').value; // For client requests
+        } else if (context === 'maReport') {
+            // Collect values from the "MA report" modal
+            requestID = document.getElementById('maRequestIdInput').value;
+            title = document.getElementById('maResponseTitle').value;
+            suggestionDescription = document.getElementById('maSuggestionDescription').value;
+            buys = document.getElementById('maRecommendedBuys').value;
 
-                        // Now that you have the customerID, proceed to add the proposal document
-                        await addDoc(collection(db, "cro_proposal"), {
-                            requestID,
-                            customerID, // Use the fetched customerID
-                            croID: auth.currentUser.uid,
-                            title,
-                            suggestionDescription,
-                            buys: buys,
-                            timestamp: serverTimestamp()
-                        });
-                        console.log(customerID)
-                        console.log("Proposal successfully submitted.");
-                        document.getElementById('responseModal').style.display = 'none';
-                        document.getElementById('responseForm').reset();
-                    } else {
-                        console.error("No such request document!");
-                        // Handle the error, perhaps notify the user or log more details
-                    }
-                } catch (error) {
-                    console.error("Error submitting proposal:", error);
-                }
+            // Fetch the ma_report document to get the customerID
+            const maReportRef = doc(db, "ma_report", requestID);
+            const maReportSnap = await getDoc(maReportRef);
+            if (maReportSnap.exists()) {
+                customerID = maReportSnap.data().customerId; // Fetch the customerId directly from the ma_report
+            } else {
+                console.error("MA report document not found");
+                return; // Exit function if the MA report document is not found
             }
+        }
+
+        try {
+            // Proceed to create a new proposal document in Firestore with the fetched customerID
+            await addDoc(collection(db, "cro_proposal"), {
+                requestID,
+                customerID,
+                croID: auth.currentUser.uid,
+                title,
+                suggestionDescription,
+                buys: buys,
+                timestamp: serverTimestamp()
+            });
+
+            console.log("Proposal successfully submitted.");
+            // Close the modal and reset the form based on context
+            if (context === 'clientRequest') {
+                document.getElementById('responseModal').style.display = 'none';
+                document.getElementById('responseForm').reset();
+            } else if (context === 'maReport') {
+                document.getElementById('maReportModal').style.display = 'none';
+                document.getElementById('maReportForm').reset();
+            }
+        } catch (error) {
+            console.error("Error submitting proposal:", error);
+        }
+    }
+
 
 
         </script>

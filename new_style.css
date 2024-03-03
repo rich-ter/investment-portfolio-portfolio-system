@@ -177,7 +177,7 @@ textarea {
 }
 
 /* Highlighting the last submitted application/response */
-.application div:last-child,
+/* .application div:last-child, */
 .response:last-child {
     border-color: #004d99;
     background-color: #e6f0ff;
